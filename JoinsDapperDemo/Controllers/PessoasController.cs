@@ -32,7 +32,7 @@ public class PessoasController : ControllerBase
     }
 
     // GET Inner Join Pessoas Detalhes
-    [HttpGet("innerJoinDetalhes")]
+    [HttpGet("inner-join-detalhes")]
     public async Task<IActionResult> GetAllPessoasInnerJoinDetalhes()
     {
         var pessoas = await _repository.GetPessoasInnerJoinDetalhes();
@@ -43,11 +43,31 @@ public class PessoasController : ControllerBase
     }
 
     // Get Inner Join Pessoas Telefones
-    [HttpGet("innerJoinTelefones")]
+    [HttpGet("inner-join-telefones")]
     public async Task<IActionResult> GetAllPessoasInnerJoinTelefones()
     {
         var pessoas = await _repository.GetPessoasInnerJoinTelefones();
         return pessoas.Any()
+        ? Ok(pessoas)
+        : NoContent();
+    }
+
+    // GET Left Join Pessoas Telefones
+    [HttpGet("left-join-telefones")]
+    public async Task<IActionResult> GetAllPessoasLeftJoinTelefones()
+    {
+        var pessoas = await _repository.GetPessoasLeftJoinTelefones();
+        return pessoas.Any()
+        ? Ok(pessoas)
+        : NoContent();
+    }
+
+    // GET Inner Join Pessoas/Telefones/Detalhes
+    [HttpGet("inner-join-telefones-detalhes")]
+    public async Task<IActionResult> GetAllPessoasInnerJoinTelefonesDetalhes()
+    {
+        var pessoas = await _repository.GetPessoasInnerJoinTelefonesDetalhes();
+        return (pessoas != null)
         ? Ok(pessoas)
         : NoContent();
     }

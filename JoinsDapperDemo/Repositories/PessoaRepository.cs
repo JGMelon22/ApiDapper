@@ -42,7 +42,7 @@ public class PessoaRepository : IPessoaRepository
         var result = await _dbConnection.QueryAsync<Pessoa, Detalhe, Pessoa>(getPessoasInnerJoinDetalhesQuery, (pessoaFunc, detalheFunc) =>
         {
             Pessoa pessoa = pessoaFunc;
-            pessoa.Detalhe = detalheFunc;
+            pessoa.Detalhe = new List<Detalhe>();
 
             return pessoa;
 
@@ -65,7 +65,8 @@ public class PessoaRepository : IPessoaRepository
         var result = await _dbConnection.QueryAsync<Pessoa, Telefone, Pessoa>(getPessoasInnerJoinTelefonesQuery, (pessoaFunc, telefoneFunc) =>
         {
             Pessoa pessoa = pessoaFunc;
-            pessoa.Telefone = telefoneFunc;
+            // pessoa.Telefone = telefoneFunc;
+            pessoa.Telefone = new List<Telefone>();
 
             return pessoa;
         },
@@ -109,5 +110,71 @@ public class PessoaRepository : IPessoaRepository
         _dbConnection.Open();
 
         await _dbConnection.ExecuteAsync(deletePessoaQuery, new { Id = id });
+    }
+
+    public async Task<List<Pessoa>> GetPessoasLeftJoinTelefones()
+    {
+        var getPessoasLeftJoinTelefonesQuery = @"SELECT *
+                                                 FROM Pessoas p
+                                                 LEFT JOIN  Telefones t
+                                                     ON p.IdPessoa = t.IdPessoa;";
+
+        _dbConnection.Open();
+
+        var lookup = new Dictionary<int, Pessoa>();
+
+        var result = await _dbConnection.QueryAsync<Pessoa, Telefone, Pessoa>(getPessoasLeftJoinTelefonesQuery, (pessoaFunc, telefoneFunc) =>
+        {
+            Pessoa pessoa1;
+
+            if (!lookup.TryGetValue(pessoaFunc.IdPessoa, out pessoa1))
+            {
+                pessoa1 = pessoaFunc;
+                pessoa1.Telefone = new List<Telefone>();
+                lookup.Add(pessoa1.IdPessoa, pessoa1);
+            }
+
+            pessoa1.Telefone.Add(telefoneFunc);
+
+            return pessoa1;
+
+        },
+
+        splitOn: "IdTelefone");
+
+        return result.ToList();
+    }
+
+    public async Task<List<Pessoa>> GetPessoasInnerJoinTelefonesDetalhes()
+    {
+        var getPessoasInnerJoinTelefonesInnerJoinDetalhesQuery = @"SELECT *
+                                                                   FROM Pessoas p
+                                                                   INNER JOIN Telefones t
+                                                                       ON p.IdPessoa = t.IdPessoa
+                                                                   INNER JOIN Detalhes d
+                                                                       ON p.IdPessoa = d.IdPessoa;";
+        _dbConnection.Open();
+
+        var lookup = new Dictionary<int, Pessoa>();
+
+        var result = await _dbConnection.QueryAsync<Pessoa, Telefone, Detalhe, Pessoa>(getPessoasInnerJoinTelefonesInnerJoinDetalhesQuery, (pessoaFunc, telefoneFunc, detalheFunc) =>
+        {
+            Pessoa pessoa1;
+
+            if (!lookup.TryGetValue(pessoaFunc.IdPessoa, out pessoa1))
+            {
+                pessoa1 = pessoaFunc;
+                pessoa1.Telefone = new List<Telefone>();
+                pessoa1.Detalhe = new List<Detalhe>();
+                lookup.Add(pessoa1.IdPessoa, pessoa1);
+            }
+
+            pessoa1.Telefone.Add(telefoneFunc);
+            pessoa1.Detalhe.Add(detalheFunc);
+
+            return pessoa1;
+        });
+
+        return result.Distinct().ToList();
     }
 }
