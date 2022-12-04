@@ -39,12 +39,22 @@ public class PessoaRepository : IPessoaRepository
                                                     ON p.IdPessoa = d.IdPessoa;";
         _dbConnection.Open();
 
+        var lookup = new Dictionary<int, Pessoa>();
+
         var result = await _dbConnection.QueryAsync<Pessoa, Detalhe, Pessoa>(getPessoasInnerJoinDetalhesQuery, (pessoaFunc, detalheFunc) =>
         {
-            Pessoa pessoa = pessoaFunc;
-            pessoa.Detalhe = new List<Detalhe>();
+            Pessoa pessoa1;
 
-            return pessoa;
+            if (!lookup.TryGetValue(pessoaFunc.IdPessoa, out pessoa1))
+            {
+                pessoa1 = pessoaFunc;
+                pessoa1.Detalhe = new List<Detalhe>();
+                lookup.Add(pessoa1.IdPessoa, pessoa1);
+            }
+
+            pessoa1.Detalhe.Add(detalheFunc);
+
+            return pessoa1;
 
         },
 
@@ -62,13 +72,22 @@ public class PessoaRepository : IPessoaRepository
 
         _dbConnection.Open();
 
+        var lookup = new Dictionary<int, Pessoa>();
+
         var result = await _dbConnection.QueryAsync<Pessoa, Telefone, Pessoa>(getPessoasInnerJoinTelefonesQuery, (pessoaFunc, telefoneFunc) =>
         {
-            Pessoa pessoa = pessoaFunc;
-            // pessoa.Telefone = telefoneFunc;
-            pessoa.Telefone = new List<Telefone>();
+            Pessoa pessoa1;
 
-            return pessoa;
+            if (!lookup.TryGetValue(pessoaFunc.IdPessoa, out pessoa1))
+            {
+                pessoa1 = pessoaFunc;
+                pessoa1.Telefone = new List<Telefone>();
+                lookup.Add(pessoa1.IdPessoa, pessoa1);
+            }
+
+            pessoa1.Telefone.Add(telefoneFunc);
+
+            return pessoa1;
         },
 
         splitOn: "IdTelefone");
@@ -173,7 +192,9 @@ public class PessoaRepository : IPessoaRepository
             pessoa1.Detalhe.Add(detalheFunc);
 
             return pessoa1;
-        });
+        },
+
+        splitOn: "IdTelefone, IdDetalhe");
 
         return result.Distinct().ToList();
     }
